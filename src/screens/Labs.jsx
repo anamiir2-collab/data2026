@@ -72,8 +72,19 @@ export function ConversionLab() {
     }
   };
 
+  // Number token helper: keeps a leading "-" as a minus sign only when it is not
+  // attached to an alphanumeric char (so "INV-2025-0042" yields 2025 and 42, not -2025/-42).
+  const numTokens = (txt) => {
+    const out = [];
+    for (const m of txt.matchAll(/-?\d[\d,]*(?:\.\d+)?/g)) {
+      let s = m[0];
+      if (s.startsWith('-') && m.index > 0 && /[\w]/.test(txt[m.index - 1])) s = s.slice(1);
+      out.push(s);
+    }
+    return out;
+  };
   const extractNumbers = (txt) => {
-    const nums = (txt.match(/-?\d[\d,]*(?:\.\d+)?/g) || []).map((x) => parseFloat(x.replace(/,/g, '')));
+    const nums = numTokens(txt).map((x) => parseFloat(x.replace(/,/g, '')));
     return { out: nums.join('\n') || '—', steps: `${lang === 'ar' ? 'تم العثور على' : 'Found'} ${nums.length} ${lang === 'ar' ? 'رقماً في النص' : 'numbers in the text'}` };
   };
   const extractCodes = (txt) => {
@@ -81,9 +92,10 @@ export function ConversionLab() {
     return { out: codes.join('\n') || '—', steps: `${codes.length} ${lang === 'ar' ? 'كوداً بنمط ABC-123' : 'codes matching ABC-123 pattern'}` };
   };
   const splitTextNum = (txt) => {
+    const re = /-?\d[\d,]*(?:\.\d+)?/g;
     const rows = txt.split('\n').filter(Boolean).map((l) => {
-      const nums = l.match(/-?\d[\d,]*(?:\.\d+)?/g) || [];
-      const text = l.replace(/-?\d[\d,]*(?:\.\d+)?/g, '').replace(/[,\s]+$/, '').trim();
+      const nums = numTokens(l);
+      const text = l.replace(re, '').replace(/[,\s]+$/, '').trim();
       return `${text} | ${nums.join(', ')}`;
     });
     return { out: rows.join('\n'), steps: lang === 'ar' ? 'فصلنا النص عن الأرقام في كل سطر (النص | الأرقام)' : 'Separated text and numbers per line (text | numbers)' };
@@ -366,7 +378,7 @@ export function evalFormula(raw, getCell) {
 }
 
 export function ExcelLab() {
-  const { t, lang } = usePrefs();
+  const { t, L, lang } = usePrefs();
   const p = useProgress();
   const [tab, setTab] = useState('library');
   const [grid, setGrid] = useState(() => ({ ...SAMPLE }));
@@ -423,10 +435,10 @@ export function ExcelLab() {
   const filtered = allFns.filter((f) => (cat === 'all' || catOf(f.name) === cat) && (!search || f.name.toLowerCase().includes(search.toLowerCase())));
 
   const challenges = [
-    { id: 'ch1', cell: 'E10', prompt: { en: 'Compute the TOTAL of the Total column (E2:E9) using SUM.', ar: 'احسب إجمالي عمود Total (E2:E9) باستخدام SUM.' }, need: ['SUM'], expect: 4200 },
-    { id: 'ch2', cell: 'F2', prompt: { en: 'Compute the AVERAGE of column E.', ar: 'احسب متوسط عمود E.' }, need: ['AVERAGE'], expect: 525 },
+    { id: 'ch1', cell: 'E10', prompt: { en: 'Compute the TOTAL of the Total column (E2:E9) using SUM.', ar: 'احسب إجمالي عمود Total (E2:E9) باستخدام SUM.' }, need: ['SUM'], expect: 4050 },
+    { id: 'ch2', cell: 'F2', prompt: { en: 'Compute the AVERAGE of column E.', ar: 'احسب متوسط عمود E.' }, need: ['AVERAGE'], expect: 578.57 },
     { id: 'ch3', cell: 'F3', prompt: { en: 'Compute the MAX of column E.', ar: 'احسب أكبر قيمة في عمود E.' }, need: ['MAX'], expect: 1800 },
-    { id: 'ch4', cell: 'F4', prompt: { en: 'Count how many orders exceed 500 SAR: use COUNTIF on E2:E9 with ">500".', ar: 'عدّ الطلبات فوق 500 ريال: استخدم COUNTIF على E2:E9 بالمعيار ">500".' }, need: ['COUNTIF'], expect: 3 },
+    { id: 'ch4', cell: 'F4', prompt: { en: 'Count how many orders exceed 500 SAR: use COUNTIF on E2:E9 with ">500".', ar: 'عدّ الطلبات فوق 500 ريال: استخدم COUNTIF على E2:E9 بالمعيار ">500".' }, need: ['COUNTIF'], expect: 2 },
     { id: 'ch5', cell: 'F5', prompt: { en: 'Total Keyboard sales: SUMIF Product column for "Keyboard" summing column E.', ar: 'إجمالي مبيعات Keyboard: استخدم SUMIF على عمود Product بمعيار "Keyboard" والجمع من عمود E.' }, need: ['SUMIF'], expect: 700 },
     { id: 'ch6', cell: 'F6', prompt: { en: 'Use IF in F6: show "HIGH" if E5 (the Laptop row) is >= 1000, otherwise "LOW".', ar: 'استخدم IF في F6: أظهر "HIGH" إذا كانت E5 أكبر أو تساوي 1000 وإلا "LOW".' }, need: ['IF'], expect: 'HIGH' },
   ];
@@ -472,10 +484,10 @@ export function ExcelLab() {
                 {openFn === f.name && (
                   <div style={{ borderTop: '1px solid var(--border)', marginTop: 9, paddingTop: 9, fontSize: 12.8 }}>
                     <div><b>{t('xl.syntax')}:</b> <code style={{ direction: 'ltr', display: 'inline-block', background: 'var(--surface-3)', padding: '2px 7px', borderRadius: 6 }}>{f.syntax}</code></div>
-                    {f.args.map((a, i) => <div key={i} style={{ marginInlineStart: 10, color: 'var(--text-2)' }}><span className="kbd">{a.name}</span> — {t.L(a.desc)}</div>)}
+                    {f.args.map((a, i) => <div key={i} style={{ marginInlineStart: 10, color: 'var(--text-2)' }}><span className="kbd">{a.name}</span> — {L(a.desc)}</div>)}
                     <div style={{ marginTop: 6 }}><b>{t('xl.example')}:</b> <code style={{ direction: 'ltr', background: 'var(--surface-3)', padding: '2px 7px', borderRadius: 6 }}>{f.example}</code></div>
-                    <div><b>{t('xl.result')}:</b> {t.L(f.result)}</div>
-                    <div style={{ marginTop: 6 }}><b>{t('xl.mistakes')}:</b>{f.mistakes.map((m, i) => <div key={i} style={{ color: 'var(--text-2)' }}>• {t.L(m)}</div>)}</div>
+                    <div><b>{t('xl.result')}:</b> {L(f.result)}</div>
+                    <div style={{ marginTop: 6 }}><b>{t('xl.mistakes')}:</b>{f.mistakes.map((m, i) => <div key={i} style={{ color: 'var(--text-2)' }}>• {L(m)}</div>)}</div>
                   </div>
                 )}
               </Card>
@@ -530,7 +542,7 @@ export function ExcelLab() {
             {challenges.map((ch) => (
               <Card key={ch.id}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>{t.L(ch.prompt)}</div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>{L(ch.prompt)}</div>
                   {chDone[ch.id] && <CheckCircle2 size={18} color="var(--success)" />}
                 </div>
                 <div style={{ marginTop: 6, fontSize: 12 }}>
@@ -602,7 +614,7 @@ const SQL_EXERCISES = [
 ];
 
 export function SqlLab() {
-  const { t, lang } = usePrefs();
+  const { t, L, lang } = usePrefs();
   const p = useProgress();
   const [db, setDb] = useState(null);
   const [err, setErr] = useState('');
@@ -704,7 +716,7 @@ export function SqlLab() {
           <Card key={ex.id}>
             <div className="tap-card" onClick={() => setOpenEx(openEx === ex.id ? null : ex.id)} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               {p.state.sqlSolved.includes(ex.id) && <CheckCircle2 size={16} color="var(--success)" />}
-              <div style={{ flex: 1, fontSize: 13, fontWeight: 700 }}>{t.L(ex.prompt)}</div>
+              <div style={{ flex: 1, fontSize: 13, fontWeight: 700 }}>{L(ex.prompt)}</div>
               <Tag color={ex.level === 'beginner' ? 'green' : 'violet'}>{ex.level === 'beginner' ? t('sq.beginner') : t('sq.intermediate')}</Tag>
             </div>
             {openEx === ex.id && (
@@ -800,7 +812,7 @@ export function CleaningLab() {
   const totalIssues = counts.missing + counts.dups + counts.invalid + counts.ws + counts.case;
 
   const push = (labelEn, labelAr, fn) => {
-    setHistory((h) => [...h, rows]);
+    setHistory((h) => [...h, [rows, fixedTotal]]);
     const [newRows, fixed] = fn(rows);
     setRows(newRows);
     setFixedTotal((f) => f + fixed);
@@ -810,7 +822,11 @@ export function CleaningLab() {
   };
   const undo = () => {
     if (!history.length) { showToast(t('cl.undoEmpty'), 'error'); return; }
-    setRows(history[history.length - 1]);
+    const [prevRows, prevFixed] = history[history.length - 1];
+    // history entries store [rows, fixedTotalBefore]; restore both so the
+    // "fixed so far" counter matches the restored dataset.
+    setRows(prevRows);
+    setFixedTotal(typeof prevFixed === 'number' ? prevFixed : 0);
     setHistory((h) => h.slice(0, -1));
   };
   const ops = {

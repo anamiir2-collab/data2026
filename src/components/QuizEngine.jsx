@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { CheckCircle2, XCircle, ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react';
 import { usePrefs, playSound } from '../state/PrefsContext.jsx';
-import { Btn, Progress, Ring } from './ui.jsx';
+import { Btn, Card, Progress, Ring } from './ui.jsx';
 
 export function normalizeText(s) {
   return String(s ?? '')
@@ -28,11 +28,11 @@ export function isAnswerCorrect(q, given) {
   return accepts.includes(g);
 }
 
-function displayAnswer(q, t) {
+function displayAnswer(q, L) {
   if (q.type === 'num') return String(q.answer);
   if (q.type === 'mcq' || q.type === 'tf' || q.type === 'error' || q.type === 'scenario') {
     const opt = q.options && q.options[q.answer];
-    return opt ? (t.L(opt)) : '';
+    return opt ? (L(opt)) : '';
   }
   return (q.accept && q.accept[0]) || String(q.answer ?? '');
 }
@@ -84,14 +84,11 @@ export default function QuizEngine({ title, questions, kind = 'module', compact 
     if (idx + 1 < total) {
       setIdx(idx + 1);
     } else {
+      // Report the final score to the parent (lesson screen / assessment record)
+      // the moment the last question is finished, then show the result screen.
+      if (onFinish) onFinish(score, total, Math.round((score / total) * 100));
       setFinished(true);
     }
-  };
-
-  const finishAndReport = () => {
-    const finalPct = Math.round((score / total) * 100);
-    if (onFinish) onFinish(score, total, finalPct);
-    if (!onFinish) setFinished(true);
   };
 
   // ----- result screen -----
@@ -128,10 +125,10 @@ export default function QuizEngine({ title, questions, kind = 'module', compact 
                   <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                     {ok ? <CheckCircle2 size={16} color="var(--success)" /> : <XCircle size={16} color="var(--danger)" />}
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700 }}>{t.L(qq.q)}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>{L(qq.q)}</div>
                       {!ok && (
                         <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>
-                          {t('q.correctAnswer', { a: displayAnswer(qq, t) })}
+                          {t('q.correctAnswer', { a: displayAnswer(qq, L) })}
                         </div>
                       )}
                     </div>

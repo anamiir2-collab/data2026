@@ -198,7 +198,17 @@ export function LessonScreen() {
   const [kcheckDone, setKcheckDone] = useState(null);
   const [summary, setSummary] = useState(s.lessonNotes[lessonId] || '');
 
-  if (!item) return null;
+  if (!item) {
+    return (
+      <div className="screen"><div className="screen-content" style={{ paddingTop: 80 }}>
+        <Card><div style={{ textAlign: 'center' }}>
+          <Lock size={34} color="var(--muted)" />
+          <div style={{ fontWeight: 700, marginTop: 10 }}>{t('nf.title')}</div>
+          <Btn style={{ marginTop: 12 }} variant="btn-outline" onClick={() => navigate('/academy')}>{t('c.back')}</Btn>
+        </div></Card>
+      </div></div>
+    );
+  }
   const ls = item.lesson;
   const unlocked = isLessonUnlocked(s, ls.id);
   const done = !!s.completedLessons[ls.id];

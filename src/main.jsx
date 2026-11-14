@@ -6,7 +6,8 @@ import { PrefsProvider } from './state/PrefsContext.jsx';
 import { ProgressProvider } from './state/ProgressContext.jsx';
 import './styles/base.css';
 
-createRoot(document.getElementById('root')).render(
+const root = createRoot(document.getElementById('root'));
+root.render(
   <React.StrictMode>
     <PrefsProvider>
       <ProgressProvider>
@@ -17,6 +18,14 @@ createRoot(document.getElementById('root')).render(
     </PrefsProvider>
   </React.StrictMode>
 );
+
+// Dismiss the pre-React splash screen once the app has painted.
+requestAnimationFrame(() => {
+  const splash = document.getElementById('splash');
+  if (!splash) return;
+  splash.classList.add('hide');
+  setTimeout(() => splash.remove(), 600);
+});
 
 // Register the service worker (PWA install + offline support)
 if ('serviceWorker' in navigator) {
