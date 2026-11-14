@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline — DataPath Academy</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(160deg, #0a1628, #123a5e);
+        color: #e6edf5;
+        font-family: 'Inter', 'Cairo', system-ui, sans-serif;
+        text-align: center;
+        padding: 24px;
+      }
+      .card { max-width: 340px; }
+      .dot { font-size: 44px; margin-bottom: 12px; }
+      h1 { font-size: 20px; margin: 0 0 10px; }
+      p { font-size: 14px; line-height: 1.7; opacity: 0.8; margin: 0; }
+      button {
+        margin-top: 18px; padding: 12px 26px; border: 0; border-radius: 14px;
+        background: linear-gradient(135deg, #1e5eff, #06b6d4); color: #fff;
+        font-size: 15px; font-weight: 700; cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="dot">📡</div>
+      <h1>You are offline</h1>
+      <p>
+        DataPath Academy could not load this page because there is no internet connection yet.
+        Lessons and labs you have already opened are cached and remain available — try reopening the app,
+        or reconnect and tap the button below.
+      </p>
+      <button onclick="location.reload()">Retry</button>
+    </div>
+  </body>
+</html>
